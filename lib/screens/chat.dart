@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:surf_practice_chat_flutter/data/chat/chat.dart';
 import 'package:surf_practice_chat_flutter/data/chat/repository/repository.dart';
 import 'package:modal_progress_hud_alt/modal_progress_hud_alt.dart';
+import 'package:surf_practice_chat_flutter/services/location.dart';
 
 /// Chat screen templete. This is your starting point.
 class ChatScreen extends StatefulWidget {
@@ -61,6 +62,26 @@ class _ChatScreenState extends State<ChatScreen> {
     getMessages();
   }
 
+  Future<dynamic> getLocation() async {
+    setState(() {
+      showSpinner = true;
+    });
+    Location location = Location();
+    print('geo1');
+    await location.getCurrentLocation();
+    print('geo2');
+    print(location.latitude);
+    print(location.longitude);
+    try {
+      await widget.chatRepository.sendMessage('SuperSasha',
+          'https://www.google.ru/maps/@${location.latitude},${location.longitude}');
+      // https://www.google.ru/maps/@${location.latitude},${location.longitude}
+    } catch (e) {
+      print(e);
+    }
+    getMessages();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -99,6 +120,13 @@ class _ChatScreenState extends State<ChatScreen> {
                 Container(
                   child: Row(
                     children: <Widget>[
+                      TextButton(
+                        onPressed: () {
+                          getLocation();
+                        },
+                        child: Icon(Icons.share_location_outlined,
+                            color: Colors.black),
+                      ),
                       Expanded(
                         child: Padding(
                           padding: const EdgeInsets.all(8.0),
@@ -119,8 +147,12 @@ class _ChatScreenState extends State<ChatScreen> {
                       ),
                       TextButton(
                         onPressed: () {
-                          messageTextController.clear();
-                          sendMessage();
+                          if (messageText == '') {
+                            return;
+                          } else {
+                            messageTextController.clear();
+                            sendMessage();
+                          }
                         },
                         child: !showSpinner
                             ? Icon(Icons.send, color: Colors.black)
