@@ -37,13 +37,23 @@ class _ChatScreenState extends State<ChatScreen> {
     messageWidgets.clear();
     var messages = await widget.chatRepository.messages;
     for (var message in messages.reversed) {
-      messageWidgets.add(
-        MessageBubble(
-          author: message.author.name,
-          text: message.message,
-          isMe: message.author.name == 'SuperSasha',
-        ),
-      );
+      if (message.runtimeType.toString() == 'ChatMessageGeolocationDto') {
+        messageWidgets.add(
+          MessageBubble(
+            author: message.author.name,
+            text: message.toString(),
+            isMe: message.author.name == 'SuperSasha',
+          ),
+        );
+      } else {
+        messageWidgets.add(
+          MessageBubble(
+            author: message.author.name,
+            text: message.message,
+            isMe: message.author.name == 'SuperSasha',
+          ),
+        );
+      }
     }
     setState(() {
       showSpinner = false;
@@ -67,14 +77,17 @@ class _ChatScreenState extends State<ChatScreen> {
       showSpinner = true;
     });
     Location location = Location();
-    print('geo1');
     await location.getCurrentLocation();
-    print('geo2');
     print(location.latitude);
     print(location.longitude);
+    ChatGeolocationDto geo = ChatGeolocationDto(
+        latitude: location.latitude, longitude: location.longitude);
+
     try {
-      await widget.chatRepository.sendMessage('SuperSasha',
-          'https://www.google.ru/maps/@${location.latitude},${location.longitude}');
+      await widget.chatRepository.sendGeolocationMessage(
+        nickname: 'SuperSasha',
+        location: geo,
+      );
       // https://www.google.ru/maps/@${location.latitude},${location.longitude}
     } catch (e) {
       print(e);
@@ -99,7 +112,7 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           actions: <Widget>[
             IconButton(
-                icon: Icon(Icons.refresh),
+                icon: const Icon(Icons.refresh),
                 onPressed: () {
                   getMessages();
                   messageWidgets.clear();
@@ -124,7 +137,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         onPressed: () {
                           getLocation();
                         },
-                        child: Icon(Icons.share_location_outlined,
+                        child: const Icon(Icons.share_location_outlined,
                             color: Colors.black),
                       ),
                       Expanded(
@@ -132,7 +145,7 @@ class _ChatScreenState extends State<ChatScreen> {
                           padding: const EdgeInsets.all(8.0),
                           child: TextFormField(
                             style: const TextStyle(color: Colors.black),
-                            decoration: InputDecoration(
+                            decoration: const InputDecoration(
                               hintText: 'Сообщение',
                               hintStyle: TextStyle(color: Colors.grey),
                             ),
@@ -155,8 +168,8 @@ class _ChatScreenState extends State<ChatScreen> {
                           }
                         },
                         child: !showSpinner
-                            ? Icon(Icons.send, color: Colors.black)
-                            : CircularProgressIndicator(),
+                            ? const Icon(Icons.send, color: Colors.black)
+                            : const CircularProgressIndicator(),
                       ),
                     ],
                   ),
@@ -174,11 +187,13 @@ class MessageBubble extends StatelessWidget {
     required this.author,
     required this.text,
     required this.isMe,
+    this.isGeo = false,
   });
 
   final String author;
   final String text;
   final bool isMe;
+  final bool isGeo;
 
   @override
   Widget build(BuildContext context) {
@@ -187,34 +202,34 @@ class MessageBubble extends StatelessWidget {
       child: Row(
         children: [
           Chip(
-            label: Text('$author', style: TextStyle(fontSize: 14)),
+            label: Text('$author', style: const TextStyle(fontSize: 14)),
             backgroundColor: Colors.white,
-            side: BorderSide(width: 1.0, color: Color(0xFFD0EDF2)),
+            side: const BorderSide(width: 1.0, color: Color(0xFFD0EDF2)),
             avatar: CircleAvatar(
               backgroundColor: Color(
                       (author.hashCode.toInt() / 1000000000 * 0xFFFFFF).toInt())
                   .withOpacity(1.0),
               child: Text(
                 author.toUpperCase().substring(0, 1),
-                style: TextStyle(color: Colors.white),
+                style: const TextStyle(color: Colors.white),
               ),
             ),
           ),
-          SizedBox(width: 5),
+          const SizedBox(width: 5),
           Expanded(
             child: Material(
-              borderRadius: BorderRadius.only(
+              borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(16),
                 topRight: Radius.circular(16),
                 bottomRight: Radius.circular(16),
               ),
               color: isMe
-                  ? Color(0xFF3E9AAA).withOpacity(0.25)
-                  : Color(0xFFC3B47A).withOpacity(0.25),
+                  ? const Color(0xFF3E9AAA).withOpacity(0.25)
+                  : const Color(0xFFC3B47A).withOpacity(0.25),
               child: Padding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Text('$text', style: TextStyle(fontSize: 14)),
+                child: Text('$text', style: const TextStyle(fontSize: 14)),
               ),
             ),
           ),
