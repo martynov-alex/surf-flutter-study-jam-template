@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:surf_practice_chat_flutter/data/chat/chat.dart';
 import 'package:surf_practice_chat_flutter/data/chat/repository/repository.dart';
+import 'package:modal_progress_hud_alt/modal_progress_hud_alt.dart';
 
 /// Chat screen templete. This is your starting point.
 class ChatScreen extends StatefulWidget {
@@ -18,7 +19,9 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   String messageText = '';
   String userNick = '';
+  bool showSpinner = false;
   List<MessageBubble> messageWidgets = [];
+  final messageTextController = TextEditingController();
 
   @override
   void initState() {
@@ -27,6 +30,9 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void getMessages() async {
+    setState(() {
+      showSpinner = true;
+    });
     messageWidgets.clear();
     var messages = await widget.chatRepository.messages;
     for (var message in messages.reversed) {
@@ -34,19 +40,25 @@ class _ChatScreenState extends State<ChatScreen> {
         MessageBubble(
           author: message.author.name,
           text: message.message,
-          //time: message.
           isMe: message.author.name == 'SuperSasha',
         ),
       );
     }
+    setState(() {
+      showSpinner = false;
+    });
   }
 
   void sendMessage() async {
+    setState(() {
+      showSpinner = true;
+    });
     try {
       await widget.chatRepository.sendMessage('SuperSasha', messageText);
     } catch (e) {
       print(e);
     }
+    getMessages();
   }
 
   @override
@@ -73,51 +85,52 @@ class _ChatScreenState extends State<ChatScreen> {
                 }),
           ],
         ),
-        body: SafeArea(
-          child: Column(
-            children: [
-              Expanded(
-                child: ListView(
-                  children: messageWidgets,
+        body: ModalProgressHUD(
+          inAsyncCall: showSpinner,
+          child: SafeArea(
+            child: Column(
+              children: [
+                Expanded(
+                  child: ListView(
+                    children: messageWidgets,
+                    //itemExtent: 40,
+                  ),
                 ),
-              ),
-              Container(
-                child: Row(
-                  children: <Widget>[
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: TextFormField(
-                          style: const TextStyle(color: Colors.black),
-                          decoration: InputDecoration(
-                            hintText: 'Сообщение',
-                            hintStyle: TextStyle(color: Colors.grey),
+                Container(
+                  child: Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: TextFormField(
+                            style: const TextStyle(color: Colors.black),
+                            decoration: InputDecoration(
+                              hintText: 'Сообщение',
+                              hintStyle: TextStyle(color: Colors.grey),
+                            ),
+                            controller: messageTextController,
+                            onChanged: (value) {
+                              setState(() {
+                                messageText = value;
+                              });
+                            },
                           ),
-                          //controller: messageTextController,
-                          onChanged: (value) {
-                            setState(() {
-                              messageText = value;
-                            });
-                          },
-                          //decoration: kMessageTextFieldDecoration,
                         ),
                       ),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        print(messageText);
-                        sendMessage();
-                        getMessages();
-                      },
-                      child: Icon(
-                        Icons.send,
-                        color: Colors.black,
+                      TextButton(
+                        onPressed: () {
+                          messageTextController.clear();
+                          sendMessage();
+                        },
+                        child: !showSpinner
+                            ? Icon(Icons.send, color: Colors.black)
+                            : CircularProgressIndicator(),
                       ),
-                    ),
-                  ],
-                ),
-              )
-            ],
+                    ],
+                  ),
+                )
+              ],
+            ),
           ),
         ));
     throw UnimplementedError();
@@ -128,13 +141,11 @@ class MessageBubble extends StatelessWidget {
   MessageBubble({
     required this.author,
     required this.text,
-    //required this.time,
     required this.isMe,
   });
 
   final String author;
   final String text;
-  //final Timestamp time;
   final bool isMe;
 
   @override
@@ -157,9 +168,7 @@ class MessageBubble extends StatelessWidget {
               ),
             ),
           ),
-          SizedBox(
-            width: 5,
-          ),
+          SizedBox(width: 5),
           Expanded(
             child: Material(
               borderRadius: BorderRadius.only(
