@@ -27,13 +27,15 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void getMessages() async {
-    //messageWidgets.clear();
+    messageWidgets.clear();
     var messages = await widget.chatRepository.messages;
     for (var message in messages.reversed) {
       messageWidgets.add(
         MessageBubble(
           author: message.author.name,
           text: message.message,
+          //time: message.
+          isMe: message.author.name == 'SuperSasha',
         ),
       );
     }
@@ -41,7 +43,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void sendMessage() async {
     try {
-      await widget.chatRepository.sendMessage('Sasha', messageText);
+      await widget.chatRepository.sendMessage('SuperSasha', messageText);
     } catch (e) {
       print(e);
     }
@@ -105,7 +107,6 @@ class _ChatScreenState extends State<ChatScreen> {
                       onPressed: () {
                         print(messageText);
                         sendMessage();
-                        messageWidgets.clear();
                         getMessages();
                       },
                       child: Icon(
@@ -128,13 +129,13 @@ class MessageBubble extends StatelessWidget {
     required this.author,
     required this.text,
     //required this.time,
-    //required this.isMe,
+    required this.isMe,
   });
 
   final String author;
   final String text;
   //final Timestamp time;
-  //final bool isMe;
+  final bool isMe;
 
   @override
   Widget build(BuildContext context) {
@@ -143,13 +144,17 @@ class MessageBubble extends StatelessWidget {
       child: Row(
         children: [
           Chip(
-            label: Text('$author', style: TextStyle(fontSize: 12)),
+            label: Text('$author', style: TextStyle(fontSize: 14)),
             backgroundColor: Colors.white,
             side: BorderSide(width: 1.0, color: Color(0xFFD0EDF2)),
             avatar: CircleAvatar(
-              backgroundColor: Colors.grey,
-              child: Text(author.toUpperCase().substring(0, 1),
-                  style: TextStyle(color: Colors.white)),
+              backgroundColor: Color(
+                      (author.hashCode.toInt() / 1000000000 * 0xFFFFFF).toInt())
+                  .withOpacity(1.0),
+              child: Text(
+                author.toUpperCase().substring(0, 1),
+                style: TextStyle(color: Colors.white),
+              ),
             ),
           ),
           SizedBox(
@@ -162,7 +167,9 @@ class MessageBubble extends StatelessWidget {
                 topRight: Radius.circular(16),
                 bottomRight: Radius.circular(16),
               ),
-              color: Color(0xFF3E9AAA).withOpacity(0.25),
+              color: isMe
+                  ? Color(0xFF3E9AAA).withOpacity(0.25)
+                  : Color(0xFFC3B47A).withOpacity(0.25),
               child: Padding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
