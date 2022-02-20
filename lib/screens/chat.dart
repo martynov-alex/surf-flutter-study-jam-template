@@ -18,18 +18,32 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   String messageText = '';
   String userNick = '';
-  List<Text> messageWidgets = [];
+  List<MessageBubble> messageWidgets = [];
+
+  @override
+  void initState() {
+    getMessages();
+    super.initState();
+  }
 
   void getMessages() async {
+    //messageWidgets.clear();
     var messages = await widget.chatRepository.messages;
-    for (var message in messages) {
-      final messageText = message.message;
-      print(messageText);
+    for (var message in messages.reversed) {
+      messageWidgets.add(
+        MessageBubble(
+          author: message.author.name,
+          text: message.message,
+        ),
+      );
+    }
+  }
 
-      messageWidgets.add(Text(
-        messageText,
-        style: TextStyle(color: Colors.black),
-      ));
+  void sendMessage() async {
+    try {
+      await widget.chatRepository.sendMessage('Sasha', messageText);
+    } catch (e) {
+      print(e);
     }
   }
 
@@ -53,6 +67,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 icon: Icon(Icons.refresh),
                 onPressed: () {
                   getMessages();
+                  messageWidgets.clear();
                 }),
           ],
         ),
@@ -78,7 +93,9 @@ class _ChatScreenState extends State<ChatScreen> {
                           ),
                           //controller: messageTextController,
                           onChanged: (value) {
-                            messageText = value;
+                            setState(() {
+                              messageText = value;
+                            });
                           },
                           //decoration: kMessageTextFieldDecoration,
                         ),
@@ -86,12 +103,10 @@ class _ChatScreenState extends State<ChatScreen> {
                     ),
                     TextButton(
                       onPressed: () {
-                        //messageTextController.clear();
-                        // _firestore.collection('messages').add({
-                        //   'text': messageText,
-                        //   'sender': loggedInUser.email,
-                        //   'time': FieldValue.serverTimestamp(),
-                        // });
+                        print(messageText);
+                        sendMessage();
+                        messageWidgets.clear();
+                        getMessages();
                       },
                       child: Icon(
                         Icons.send,
@@ -105,5 +120,58 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
         ));
     throw UnimplementedError();
+  }
+}
+
+class MessageBubble extends StatelessWidget {
+  MessageBubble({
+    required this.author,
+    required this.text,
+    //required this.time,
+    //required this.isMe,
+  });
+
+  final String author;
+  final String text;
+  //final Timestamp time;
+  //final bool isMe;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 1, vertical: 0.5),
+      child: Row(
+        children: [
+          Chip(
+            label: Text('$author', style: TextStyle(fontSize: 12)),
+            backgroundColor: Colors.white,
+            side: BorderSide(width: 1.0, color: Color(0xFFD0EDF2)),
+            avatar: CircleAvatar(
+              backgroundColor: Colors.grey,
+              child: Text(author.toUpperCase().substring(0, 1),
+                  style: TextStyle(color: Colors.white)),
+            ),
+          ),
+          SizedBox(
+            width: 5,
+          ),
+          Expanded(
+            child: Material(
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
+                bottomRight: Radius.circular(16),
+              ),
+              color: Color(0xFF3E9AAA).withOpacity(0.25),
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Text('$text', style: TextStyle(fontSize: 14)),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
